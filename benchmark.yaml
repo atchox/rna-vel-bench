@@ -16,7 +16,7 @@ metric_collectors:
     software_environment: "conda_env"
     repository:
       url: https://github.com/atchox/rna-vel-bench-report
-      commit: 7424239
+      commit: 740d299
     inputs:
       - metric.json
     outputs:
