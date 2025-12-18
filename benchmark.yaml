@@ -1,0 +1,127 @@
+name: RNA Velocity Benchmark
+id: rna-vel-bench
+description: Benchmarking RNA velocity tools
+benchmarker: Atreya Choudhury
+version: 1.0.0
+
+software_backend: "conda"
+software_environments:
+  conda_env:
+    name: global conda environment
+    conda: envs/conda.yaml
+
+metric_collectors:
+  - id: report
+    name: "Gathers and processes metrics from different pipelines"
+    software_environment: "conda_env"
+    repository:
+      url: https://github.com/atchox/rna-vel-bench-report
+      commit: 7424239
+    inputs:
+      - metric.json
+    outputs:
+      - id: report
+        path: "report.tsv"
+
+stages:
+  - id: datasets
+    outputs:
+      - id: data.manifest
+        path: "{dataset}.manifest.tsv"
+    modules:
+      - id: panc-endo
+        name: "loads the pancreatic endocrinogenesis benchmark dataset"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-datasets
+          commit: 3d9f759
+        parameters:
+          - params: { threads: 32 }
+
+  - id: count
+    inputs:
+      - data.manifest
+    outputs:
+      - id: count.manifest
+        path: "{dataset}.manifest.tsv"
+    modules:
+      - id: kb
+        name: "generates the RNA velocity ready count matrices"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-count
+          commit: 8e0a9b6
+        parameters:
+          - params: { threads: "96", memory: "192G" }
+
+  - id: integration
+    inputs:
+      - count.manifest
+    outputs:
+      - id: integrate.h5ad
+        path: "{dataset}.integrated.h5ad"
+    modules:
+      - id: basic
+        name: "generates the RNA velocity ready anndata integrated via scanpy"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-integration
+          commit: eae82e4
+
+  - id: methods
+    inputs:
+      - integrate.h5ad
+    outputs:
+      - id: method.h5ad
+        path: "{dataset}.velocity.h5ad"
+    modules:
+      - id: scvelo-det
+        name: "generates the metric-ready RNA velocity anndata outputs using scvelo in deterministic mode"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-methods
+          commit: 0f187bf
+      - id: scvelo-sto
+        name: "generates the metric-ready RNA velocity anndata outputs using scvelo in stochastic mode"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-methods
+          commit: 0f187bf
+      - id: scvelo-dyn
+        name: "generates the metric-ready RNA velocity anndata outputs using scvelo in dynamical mode"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-methods
+          commit: 0f187bf
+      - id: dynamo-det
+        name: "generates the metric-ready RNA velocity anndata outputs using dynamo in deterministic mode"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-methods
+          commit: 0f187bf
+      - id: dynamo-sto
+        name: "generates the metric-ready RNA velocity anndata outputs using dynamo in stochastic mode"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-methods
+          commit: 0f187bf
+      - id: velovi
+        name: "generates the metric-ready RNA velocity anndata outputs using veloVI"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-methods
+          commit: 0f187bf
+
+  - id: metrics
+    inputs:
+      - method.h5ad
+    outputs:
+      - id: metric.json
+        path: "{dataset}.metric.json"
+    modules:
+      - id: cbdir
+        name: "Computes the CBDir metric for a RNA velocity method"
+        software_environment: "conda_env"
+        repository:
+          url: https://github.com/atchox/rna-vel-bench-metrics
+          commit: 1eff1d0
